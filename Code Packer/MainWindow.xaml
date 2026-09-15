@@ -1,0 +1,430 @@
+﻿<Window x:Class="CodePacker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:CodePacker.ViewModels"
+        xmlns:models="clr-namespace:CodePacker.Models"
+        Title="Code Packer — AI Context Engine"
+        Height="860" Width="1100"
+        MinHeight="650" MinWidth="900"
+        Background="#0B0F19"
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
+        Drop="Window_Drop" DragOver="Window_DragOver"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        FontFamily="Segoe UI, Inter, Arial">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- Цветовая палитра современного Web SaaS (Slate/Emerald/Indigo) -->
+        <SolidColorBrush x:Key="BgCanvas" Color="#0B0F19"/>
+        <SolidColorBrush x:Key="CardBg" Color="#111827"/>
+        <SolidColorBrush x:Key="CardSubtle" Color="#161F30"/>
+        <SolidColorBrush x:Key="InputBg" Color="#0D1322"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#1F293D"/>
+        <SolidColorBrush x:Key="BorderLight" Color="#334155"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#64748B"/>
+        <SolidColorBrush x:Key="AccentEmerald" Color="#10B981"/>
+        <SolidColorBrush x:Key="AccentIndigo" Color="#6366F1"/>
+        <SolidColorBrush x:Key="AccentRose" Color="#F43F5E"/>
+        <SolidColorBrush x:Key="AccentSky" Color="#38BDF8"/>
+        <SolidColorBrush x:Key="AccentAmber" Color="#F59E0B"/>
+
+        <!-- Стилизация чекбоксов под веб-тогглы -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,16,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border x:Name="CheckBorder" Width="16" Height="16" CornerRadius="4" 
+                                    Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderLight}" 
+                                    BorderThickness="1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Path x:Name="CheckMark" Data="M 3,7 L 6,10 L 13,3" Stroke="{StaticResource AccentEmerald}" 
+                                      StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBorder" Property="Background" Value="#064E3B"/>
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{StaticResource AccentEmerald}"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{StaticResource AccentEmerald}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Базовый стиль кнопок в веб-стиле -->
+        <Style x:Key="WebButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="{StaticResource CardSubtle}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- 0: Top Navigation Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Config Section -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2: Quick Slots -->
+            <RowDefinition Height="*"/>
+            <!-- 3: File Explorer / Dropzone -->
+            <RowDefinition Height="Auto"/>
+            <!-- 4: Metrics / Token Gauge -->
+            <RowDefinition Height="Auto"/>
+            <!-- 5: Actions Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- 0. ВЕБ-ХЕДЕР (NAVBAR) -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="34" Height="34" CornerRadius="8" Background="#064E3B" BorderBrush="{StaticResource AccentEmerald}" BorderThickness="1" Margin="0,0,12,0">
+                    <TextBlock Text="⚡" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="CodePacker" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                        <Border Background="#1E293B" CornerRadius="4" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="PRO AI PACKER" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AccentSky}"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Интеллектуальная упаковка проекта и ассетов для LLM" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,1,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Быстрый селектор модели справа (как в веб-консолях) -->
+            <Border Grid.Column="1" HorizontalAlignment="Right" Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="10,5">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="МОДЕЛЬ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Width="160" 
+                              Background="{StaticResource InputBg}" Foreground="{StaticResource TextPrimary}" BorderThickness="0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 1. ПАНЕЛЬ ОПЦИЙ И ФИЛЬТРОВ (CARD) -->
+        <Border Grid.Row="1" Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,12">
+            <StackPanel>
+                <!-- Чекбоксы в стиле modern pills -->
+                <WrapPanel Margin="0,0,0,12">
+                    <CheckBox Content="Убрать пробелы" IsChecked="{Binding RemoveWhitespace}"/>
+                    <CheckBox Content="Вырезать комментарии" IsChecked="{Binding RemoveComments}"/>
+                    <CheckBox Content="Компактный заголовок" IsChecked="{Binding MinimalHeader}"/>
+                    <CheckBox Content="Minify JSON" IsChecked="{Binding SmartJsonMinify}"/>
+                    <CheckBox Content="📷 Изображения в PDF" IsChecked="{Binding IncludeImagesInPdf}"/>
+                </WrapPanel>
+
+                <!-- Инпуты с аккуратными префикс-лейблами -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="6" Margin="0,0,10,0">
+                        <Grid Margin="10,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Расширения:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding CustomExtensions, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextPrimary}" BorderThickness="0" VerticalContentAlignment="Center" FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="6">
+                        <Grid Margin="10,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Проект:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextPrimary}" BorderThickness="0" VerticalContentAlignment="Center" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Нижняя строка панели настроек -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="6" Margin="0,0,12,0">
+                        <Grid Margin="10,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Игнор:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding CustomIgnorePatterns, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextPrimary}" BorderThickness="0" VerticalContentAlignment="Center" FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Размер шрифта PDF -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="PDF Кегль:" FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Slider Value="{Binding PdfFontSize}" Minimum="4" Maximum="14" SmallChange="1" Width="80" VerticalAlignment="Center"/>
+                        <Border Background="{StaticResource CardSubtle}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
+                            <TextBlock Text="{Binding PdfFontSize, StringFormat={}{0} pt}" FontWeight="Bold" Foreground="{StaticResource AccentEmerald}" FontSize="11"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- 2. БЫСТРЫЕ СЛОТЫ ПРОЕКТОВ (QUICK CARDS) -->
+        <Border Grid.Row="2" Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,12">
+            <ItemsControl ItemsSource="{Binding QuickSlots}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="6"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Margin="3" Padding="8,6">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Button Grid.Row="0" Style="{StaticResource WebButton}" Padding="2" Background="Transparent" BorderThickness="0"
+                                        Command="{Binding DataContext.LoadSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                        CommandParameter="{Binding}">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11" Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                </Button>
+
+                                <TextBlock Grid.Row="1" Text="{Binding FileCount, StringFormat={}{0} файлов}" FontSize="10" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,4"/>
+
+                                <Button Grid.Row="2" Content="📌 Запомнить" 
+                                        Command="{Binding DataContext.PinToSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                        CommandParameter="{Binding SlotIndex}" FontSize="9" Padding="4,2"
+                                        Style="{StaticResource WebButton}" Background="{StaticResource CardSubtle}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- 3. ДЕРЕВО ФАЙЛОВ / DRAG-AND-DROP WORKSPACE -->
+        <Border Grid.Row="3" Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="10" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Тулбар действий над файлами -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource WebButton}" Command="{Binding SelectFolderCommand}" 
+                                Background="{StaticResource AccentEmerald}" Foreground="#042F2E" BorderThickness="0" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📁" Margin="0,0,6,0"/>
+                                <TextBlock Text="Открыть папку" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource WebButton}" Content="Выбрать все" Command="{Binding SelectAllCommand}" Margin="0,0,6,0"/>
+                        <Button Style="{StaticResource WebButton}" Content="Снять все" Command="{Binding DeselectAllCommand}"/>
+                    </StackPanel>
+
+                    <!-- Поиск в стиле веб-инпутов с иконкой -->
+                    <Border HorizontalAlignment="Right" Width="220" Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="6" Padding="8,4">
+                        <DockPanel>
+                            <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" Margin="0,0,6,0"/>
+                            <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="{StaticResource TextPrimary}" BorderThickness="0" VerticalContentAlignment="Center" FontSize="11"/>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Дерево файлов -->
+                <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" Background="Transparent" BorderThickness="0">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                            <Setter Property="Padding" Value="4,2"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}" DataType="{x:Type models:TreeNodeItem}">
+                            <StackPanel Orientation="Horizontal" Margin="2,1">
+                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" FontSize="13">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="📄" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                                                    <Setter Property="Text" Value="📁" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
+                                <Border Background="{StaticResource CardSubtle}" CornerRadius="4" Padding="4,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SizeBytes, StringFormat={}{0} B}" Foreground="{StaticResource TextSecondary}" FontSize="9"/>
+                                </Border>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Grid>
+        </Border>
+
+        <!-- 4. DASHBOARD МЕТРИК + ШКАЛА КОНТЕКСТНОГО ОКНА LLM -->
+        <Grid Grid.Row="4" Margin="0,12,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 5 KPI карточек -->
+            <UniformGrid Grid.Row="0" Columns="5" Margin="0,0,0,8">
+                <!-- Код -->
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,6,0">
+                    <StackPanel>
+                        <TextBlock Text="ФАЙЛЫ КОДА" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock Text="{Binding CodeFilesCount}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentEmerald}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Фото -->
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="3,0,3,0">
+                    <StackPanel>
+                        <TextBlock Text="АССЕТЫ/ФОТО" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock Text="{Binding ImageFilesCount}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentSky}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Размер -->
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="3,0,3,0">
+                    <StackPanel>
+                        <TextBlock Text="ОБЪЕМ" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock Text="{Binding RawSizeFormatted}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentIndigo}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Экономия -->
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="3,0,3,0">
+                    <StackPanel>
+                        <TextBlock Text="СЖАТИЕ" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock Text="{Binding SavingsPercent, StringFormat={}{0}%}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentAmber}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Токены -->
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="6,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ПРИМЕРНО ТОКЕНОВ" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock Text="{Binding EstimatedTokens, StringFormat={}~{0}}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentRose}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Шкала заполнения контекстного окна модели (Context Bar) -->
+            <Border Grid.Row="1" Background="{StaticResource CardBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="LLM Context:" FontSize="10" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                    <ProgressBar Grid.Column="1" Value="{Binding TokenPercent}" Minimum="0" Maximum="100" Height="6" 
+                                 Foreground="{StaticResource AccentEmerald}" Background="{StaticResource InputBg}" BorderThickness="0"/>
+
+                    <TextBlock Grid.Column="2" Text="{Binding TokenPercent, StringFormat={}{0}%}" FontSize="10" FontWeight="Bold" 
+                               Foreground="{StaticResource AccentEmerald}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 5. НИЖНЯЯ ПАНЕЛЬ СТАТУСА И ОСНОВНЫХ ДЕЙСТВИЙ -->
+        <Grid Grid.Row="5">
+            <!-- Статус с пульсирующим онлайн-индикатором -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Ellipse Width="8" Height="8" Fill="{StaticResource AccentEmerald}" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+            </StackPanel>
+
+            <!-- Кнопки экспорта (CTA) -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource WebButton}" Command="{Binding ExportTxtCommand}" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="💾" Margin="0,0,6,0"/>
+                        <TextBlock Text="TXT Экспорт"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource WebButton}" Command="{Binding ExportPdfCommand}" 
+                        Background="#881337" BorderBrush="{StaticResource AccentRose}" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📑" Margin="0,0,6,0"/>
+                        <TextBlock Text="PDF Документ" Foreground="#FDA4AF"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Главная кнопка действия (Primary CTA) -->
+                <Button Style="{StaticResource WebButton}" Command="{Binding CopyCommand}" 
+                        Background="{StaticResource AccentIndigo}" BorderThickness="0" Padding="18,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚡" Margin="0,0,6,0"/>
+                        <TextBlock Text="Скопировать всё" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

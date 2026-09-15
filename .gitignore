@@ -1,0 +1,50 @@
+
+.vs/
+**/.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET build
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Build configurations
+Debug/
+Release/
+x64/
+x86/
+artifacts/
+
+# Visual Studio generated
+*.csproj.user
+*.VC.db
+*.VC.VC.opendb
+*.opendb
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# JetBrains / VS Code
+.idea/
+.vscode/

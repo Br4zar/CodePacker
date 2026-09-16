@@ -149,7 +149,7 @@ dotnet run --project "Code Packer"
 
 ## 📋 Формат экспорта
 
-```
+
 # ProjectName | 15 files | 42.3KB
 
 >>> src/Main.cs
